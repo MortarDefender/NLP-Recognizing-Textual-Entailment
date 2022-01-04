@@ -1,0 +1,6 @@
+https://github.com/kiril-me/rep-task
+https://www.oreilly.com/content/textual-entailment-with-tensorflow/
+https://github.com/himanshututeja1998/Textual-Entailment-Using-BERT
+https://towardsdatascience.com/fine-tuning-pre-trained-transformer-models-for-sentence-entailment-d87caf9ec9db
+https://wordnet.princeton.edu/
+https://scholar.google.co.il/scholar?q=Recognizing+Textual+Entailment&hl=en&as_sdt=0&as_vis=1&oi=scholart
