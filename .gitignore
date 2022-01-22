@@ -1,0 +1,4 @@
+*.pyc
+__pycache__/*.*
+snli_1.0.zip
+snli_1.0/
