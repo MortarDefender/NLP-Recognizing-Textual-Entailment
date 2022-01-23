@@ -13,16 +13,7 @@ import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 
 from .classifier import Classifier
-
-
-def get_unbatched_dataset():
-    pass
-
-def get_batched_training_dataset():
-    pass
-
-def get_prediction_dataset():
-    pass
+from .dataSetUtils import getUnbatchedDataset, getBatchedTrainingDataset, getPredictionDataset
 
 
 class Trainer:
@@ -36,18 +27,18 @@ class Trainer:
         self.batch_size = replicaBatchSize * self.strategy.num_replicas_in_sync
         predictionBatchSize = predictionBatchSize * self.strategy.num_replicas_in_sync
 
-        train_ds, self.nb_examples = get_unbatched_dataset(trainDataSet = trainDataSet, modelName = modelName, maxLength = maxLength)
-        self.trainDataSet = get_batched_training_dataset(train_ds, self.nb_examples, batch_size = self.batch_size, 
+        train_ds, self.nb_examples = getUnbatchedDataset(trainDataSet = trainDataSet, modelName = modelName, maxLength = maxLength)
+        self.trainDataSet = getBatchedTrainingDataset(train_ds, self.nb_examples, batch_size = self.batch_size, 
                                                          shuffleBufferSize = shuffleBufferSize, repeat = True)
         
-        valid_ds, self.nb_valid_examples = get_unbatched_dataset(dataSetNames = ['original valid'], modelName = modelName, maxLength = maxLength)
-        self.validDataSet = get_prediction_dataset(valid_ds, predictionBatchSize)
+        valid_ds, self.nb_valid_examples = getUnbatchedDataset(dataSetNames = ['original valid'], modelName = modelName, maxLength = maxLength)
+        self.validDataSet = getPredictionDataset(valid_ds, predictionBatchSize)
         
         original_valid = None
         self.validLabels = next(iter(self.valid_ds.map(lambda inputs, label: label).unbatch().batch(len(original_valid))))
         
-        test_ds, self.nb_test_examples = get_unbatched_dataset(dataSetNames = ['original test'], modelName = modelName, maxLength = maxLength)
-        self.testDataSet = get_prediction_dataset(test_ds, predictionBatchSize)
+        test_ds, self.nb_test_examples = getUnbatchedDataset(dataSetNames = ['original test'], modelName = modelName, maxLength = maxLength)
+        self.testDataSet = getPredictionDataset(test_ds, predictionBatchSize)
         
         self.stepsPerEpoch = self.nb_examples // self.batch_size
     
@@ -64,7 +55,7 @@ class Trainer:
         
         return strategy
     
-    def get_model(self, model_name, lr, verbose=False):
+    def get_model(self, model_name, lr, verbose = False):
 
         with self.strategy.scope():
 
@@ -77,7 +68,7 @@ class Trainer:
                 model.summary()
 
             # Instiate an optimizer with a learning rate schedule
-            optimizer = tf.keras.optimizers.Adam(lr=lr)
+            optimizer = tf.keras.optimizers.Adam(lr = lr)
 
             # Only `NONE` and `SUM` are allowed, and it has to be explicitly specified.
             loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True, reduction = tf.keras.losses.Reduction.SUM)
