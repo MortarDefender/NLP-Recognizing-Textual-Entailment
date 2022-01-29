@@ -29,6 +29,7 @@ def getDevice(verbose = False):
         
     return device
 
+
 def buildModel(modelName, maxLength, mode = "avg_pooling"):
     
     inputs = Input(shape = (maxLength,), dtype = tf.int32, name = "input_ids")
@@ -49,7 +50,7 @@ def buildModel(modelName, maxLength, mode = "avg_pooling"):
     out = Dense(3, activation = 'softmax')(features)
     
     # define model
-    model = Model(inputs = inputs, outputs=out)
+    model = Model(inputs = inputs, outputs = out)
     model.compile(
         Adam(lr = 1e-5), 
         loss = 'sparse_categorical_crossentropy', 
@@ -57,6 +58,7 @@ def buildModel(modelName, maxLength, mode = "avg_pooling"):
     )
 
     return model
+
 
 def tokenizeDataframe(data, tokenizer, maxLength):
     
@@ -67,6 +69,7 @@ def tokenizeDataframe(data, tokenizer, maxLength):
     features = encoded['input_ids']
     
     return features, labels
+
 
 def loadDataSet(dataSetPath, dataSetName = None, useValidation = True):  # mnli, snli
     
@@ -87,6 +90,7 @@ def loadDataSet(dataSetPath, dataSetName = None, useValidation = True):  # mnli,
                 result.append((premise, hypothesis, label, 'en'))
     
     return pd.DataFrame(result, columns = ['premise', 'hypothesis', 'label', 'lang_abv'])
+
 
 def buildDataset(features, labels, mode, auto, batchSize):
     

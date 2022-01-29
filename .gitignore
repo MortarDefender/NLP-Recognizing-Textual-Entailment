@@ -2,3 +2,6 @@
 __pycache__/*.*
 snli_1.0.zip
 Tests/snli
+Tests/multinli_1.0
+Tests/XNLI-1.0
+Tests/res

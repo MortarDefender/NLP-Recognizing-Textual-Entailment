@@ -26,7 +26,7 @@ class Trainer:
     def __loadXnli(self):
         
         result = []
-        dataset = nlp.load_dataset(path='xnli')
+        dataset = nlp.load_dataset(path = 'xnli')
         
         for key in dataset.keys():
             for record in dataset[key]:
@@ -95,13 +95,13 @@ class Trainer:
     def run(self, trainDataSet, testDataSet):
         
         # load data
-        train = pd.read_csv(trainDataSet) #TODO
-        test = pd.read_csv(testDataSet) #TODO
+        train = pd.read_json(trainDataSet, lines=True) #TODO
+        test = pd.read_json(testDataSet, lines=True) #TODO
         
         mnli = loadDataSet('glue', 'mnli')
         xnli = self.__loadXnli()  ##
         
-        # tokenize  features, labels
+        # tokenize 
         trainFeatures, trainLabels = self.__preprocess(train)
         testFeatures, testLabels = self.__preprocess(test)
         

@@ -10,6 +10,7 @@ from sklearn.metrics import accuracy_score
 from .train import Trainer
 from .dataSetUtils import getDevice, buildModel, tokenizeDataframe, loadDataSet, buildDataset
 
+
 class Classifier():
     
     def __init__(self, trainDataSet, testDataSet, outputFile, modelName = 'jplu/tf-xlm-roberta-large', maxLength = 120):
@@ -71,9 +72,9 @@ class Classifier():
             Trainer(trainDataSet, testDataSet)
         
         # load data
-        train = pd.read_csv(trainDataSet)
-        test = pd.read_csv(testDataSet)
-        output = pd.read_csv(outputFile)
+        train = pd.read_json(trainDataSet, lines=True)
+        test = pd.read_json(testDataSet, lines=True)
+        output = pd.read_json(outputFile, lines=True)
         
         # preprocess
         trainFeatures, trainLabels = self.__preprocess(train)
