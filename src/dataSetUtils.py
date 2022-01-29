@@ -1,81 +1,113 @@
-import os
 import nlp
-import json
-import random
-import datetime
-import tokenizers
-import numpy as np
-import transformers
 import pandas as pd
 import tensorflow as tf
-import plotly.express as px
-import matplotlib.pyplot as plt
-from sklearn.utils import shuffle
+from transformers import TFAutoModel
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Input
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import GlobalMaxPooling1D
+from tensorflow.keras.layers import GlobalAveragePooling1D
 
 
-def getUnbatchedDataset(trainDataSet, modelName, maxLength=64):
-    
-    if type(trainDataSet) == list:
-        trainDataSet = {k: None for k in trainDataSet}
-    
-    trainDataSet = {k: v for k, v in trainDataSet.items() if k in raw_ds_mapping}    
-    
-    tokenizer = transformers.AutoTokenizer.from_pretrained(modelName, use_fast=True)
-    
-    # This is a list of generators
-    raw_datasets = [get_raw_dataset(x) for x in trainDataSet]
-    
-    nb_examples = 0
-
-    labels = []    
-    sentence_pairs = []
-    
-    for name in trainDataSet:
-        raw_ds = get_raw_dataset(name)
-        nb_examples_to_use = raw_ds_mapping[name][2]
+def getDevice(verbose = False):
         
-        if trainDataSet[name]:
-            nb_examples_to_use = min(trainDataSet[name], nb_examples_to_use)
+    try:
+        tpu = tf.distribute.cluster_resolver.TPUClusterResolver()
+        tf.config.experimental_connect_to_cluster(tpu)
+        tf.tpu.experimental.initialize_tpu_system(tpu)
+        device = tf.distribute.experimental.TPUStrategy(tpu)
         
-        nb_examples += nb_examples_to_use
+        if verbose:
+            print("Init TPU device")
+
+    except ValueError:
+        device = tf.distribute.get_strategy() # for CPU and single GPU
         
-        n = 0
+        if verbose:
+            print("Init CPU/GPU device")
         
-        for x in raw_ds:
-            sentence_pairs.append((x['premise'], x['hypothesis']))
-            labels.append(x['label'])
-            n += 1
-            if n >= nb_examples_to_use:
-                break
+    return device
 
-    # `transformers.tokenization_utils_base.BatchEncoding` object -> `dict`
-    r = dict(tokenizer.batch_encode_plus(batch_text_or_text_pairs = sentence_pairs, max_length = maxLength, padding = 'max_length', truncation = True))
-
-    # This is very slow
-    dataset = tf.data.Dataset.from_tensor_slices((r, labels))
-
-    return dataset, nb_examples
-
-
-def getBatchedTrainingDataset(dataset, nb_examples, batch_size = 16, shuffleBufferSize = 1, repeat = False):
+def buildModel(modelName, maxLength, mode = "avg_pooling"):
     
-    if repeat:
-        dataset = dataset.repeat()
+    inputs = Input(shape = (maxLength,), dtype = tf.int32, name = "input_ids")
+    encoder = TFAutoModel.from_pretrained(modelName)
+    encoderOutput = encoder(inputs)[0]
     
-    if not shuffle_buffer_size:
-        shuffle_buffer_size = nb_examples
+    # convert transformer encodings to 1d-vector
+    if mode == "cls":
+        features = encoderOutput[:, 0, :] # using first token as encoder feature map
+    elif mode == "avg_pooling":
+        features = GlobalAveragePooling1D()(encoderOutput)
+    elif mode == "max_pooling":
+        features = GlobalMaxPooling1D()(encoderOutput)
+    else:
+        raise NotImplementedError
+    
+    # 3-class softmax
+    out = Dense(3, activation = 'softmax')(features)
+    
+    # define model
+    model = Model(inputs = inputs, outputs=out)
+    model.compile(
+        Adam(lr = 1e-5), 
+        loss = 'sparse_categorical_crossentropy', 
+        metrics = ['accuracy']
+    )
 
-    dataset = dataset.shuffle(shuffle_buffer_size)
-    
-    dataset = dataset.batch(batch_size, drop_remainder=True)
-    
-    dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
-    
-    return dataset
+    return model
 
+def tokenizeDataframe(data, tokenizer, maxLength):
+    
+    text = data[['premise', 'hypothesis']].values.tolist()  #TODO
+    encoded = tokenizer.batch_encode_plus(text, padding = True, max_length = maxLength, truncation = True)
+    
+    labels = data.label.values if 'label' in data.columns else None
+    features = encoded['input_ids']
+    
+    return features, labels
 
-def getPredictionDataset(dataset, batch_size = 16):
-    dataset = dataset.batch(batch_size, drop_remainder=False)
-    dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
+def loadDataSet(dataSetPath, dataSetName = None, useValidation = True):  # mnli, snli
+    
+    result = []
+    keys = ['train', 'validation'] if useValidation else ['train']
+    
+    if dataSetName is None:
+        dataset = nlp.load_dataset(path = dataSetPath)
+    else:
+        dataset = nlp.load_dataset(path = dataSetPath, name = dataSetName)
+    
+    for key in keys:
+        for record in dataset[key]:
+            
+            premise, hypothesis, label = record['premise'], record['hypothesis'], record['label']
+            
+            if premise and hypothesis and label in {0, 1, 2}:
+                result.append((premise, hypothesis, label, 'en'))
+    
+    return pd.DataFrame(result, columns = ['premise', 'hypothesis', 'label', 'lang_abv'])
+
+def buildDataset(features, labels, mode, auto, batchSize):
+    
+    if mode == "train":
+        dataset = (
+            tf.data.Dataset.from_tensor_slices((features, labels)).repeat().shuffle(2048)
+            .batch(batchSize).prefetch(auto)
+        )
+        
+    elif mode == "valid":
+        dataset = (
+            tf.data.Dataset.from_tensor_slices((features, labels))
+            .batch(batchSize).cache().prefetch(auto)
+        )
+        
+    elif mode == "test":
+        dataset = (
+            tf.data.Dataset.from_tensor_slices(features).batch(batchSize)
+        )
+        
+    else:
+        raise NotImplementedError
     
     return dataset

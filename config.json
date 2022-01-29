@@ -1,0 +1,4 @@
+{
+  "trainDataSet":  "./Tests/snli/snli_train.jsonl",
+  "testDataSet": "./Tests/snli/snli_test.jsonl"
+}
