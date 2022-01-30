@@ -47,23 +47,41 @@ class Classifier():
     def predict(self, data):
         return self.model.predict(data, verbose = 0)
     
-    def accuracy(self, features, trueLabels, verbose = False):
-        
+    def accuracy(self, features, trueLabels,extended = True, verbose = False):
+
+        #if not extended:                                #2 class
+         #   for i,l in enumerate(trueLabels):
+          #      if l == 1:
+           #         trueLabels[i] = 2
+
         dataset = buildDataset(features, trueLabels, "valid", self.auto, self.batchSize)
         predictions = np.argmax(self.model.predict(dataset), axis = 1)
+
+        #if not extended:  # 2 class
+         #   for i, l in enumerate(predictions):
+          #      if l == 1:
+           #         predictions[i] = 2
+
         
         if verbose:
             print(f"accuracy {accuracy_score(trueLabels, predictions):.4f}")
         
         return accuracy_score(trueLabels, predictions)
     
-    def savePredictions(self, testDataset, output, outputFileName):
+    def savePredictions(self, testDataset, output, outputFileName, extended = True):
         
         testPrections = self.predict(testDataset)
-        output['prediction'] = testPrections.argmax(axis = 1)
+        predictions = testPrections.argmax(axis = 1)
+
+        #if not extended:                           #2 class
+         #   for i,l in enumerate(predictions):
+          #      if l == 1:
+           #         predictions[i] = 2
+
+        output['prediction'] = predictions
         output.to_csv(outputFileName, index = False)
     
-    def run(self, trainDataSet, testDataSet, outputFile, verbose = False):
+    def run(self, trainDataSet, testDataSet, outputFile, extended = True, verbose = False):
         
         if not os.path.isfile("savedModel.h5"):
             if verbose:
@@ -91,5 +109,5 @@ class Classifier():
             print(f"fraction of train set english premises occurence in MNLI = {premises.loc[premises.lang_abv=='en', 'mnli'].mean() * 100}%") 
         
         self.__loadModel()
-        self.accuracy(trainFeatures, trainLabels, True)  #### accurace with the train data ?? 
-        self.savePredictions(testDataset, output, 'submission.csv')
+        self.accuracy(trainFeatures, trainLabels, extended, True)  #### accurace with the train data ??
+        self.savePredictions(testDataset, output, 'submission.csv', extended)
