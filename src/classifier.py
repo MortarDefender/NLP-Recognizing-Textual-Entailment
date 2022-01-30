@@ -60,7 +60,14 @@ class Classifier():
     def savePredictions(self, testDataset, output, outputFileName):
         
         testPrections = self.predict(testDataset)
-        output['prediction'] = testPrections.argmax(axis = 1)
+        predictions = testPrections.argmax(axis = 1)
+
+        #if not extended:                           #2 class
+         #   for i,l in enumerate(predictions):
+          #      if l == 1:
+           #         predictions[i] = 2
+
+        output['prediction'] = predictions
         output.to_csv(outputFileName, index = False)
     
     def run(self, trainDataSet, testDataSet, outputFile, verbose = False):
