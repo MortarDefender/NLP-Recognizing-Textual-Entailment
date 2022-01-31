@@ -76,11 +76,12 @@ def loadDataSet(dataSetPath, dataSetName = None, useValidation = True):  # mnli,
     result = []
     keys = ['train', 'validation'] if useValidation else ['train']
     
-    if dataSetName is None:
-        dataset = nlp.load_dataset(path = dataSetPath)
-    else:
-        dataset = nlp.load_dataset(path = dataSetPath, name = dataSetName)
-    
+    #if dataSetName is None:
+     #   dataset = nlp.load_dataset(path = dataSetPath)
+    #else:
+     #   dataset = nlp.load_dataset(path = dataSetPath, name = dataSetName)
+    dataset = pd.read_json(trainDataSet)
+
     for key in keys:
         for record in dataset[key]:
             

@@ -25,4 +25,4 @@ if __name__ == '__main__':
     with open('config.json', 'r') as json_file:
         config = json.load(json_file)
     
-    run()
+    run(config["trainDataSet"], config["testDataSet"])

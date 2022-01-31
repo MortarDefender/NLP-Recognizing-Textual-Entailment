@@ -1,4 +1,4 @@
 {
-  "trainDataSet":  "./Tests/snli/snli_train.jsonl",
-  "testDataSet": "./Tests/snli/snli_test.jsonl"
+  "trainDataSet":  "./Tests/unifiedTrainSet.json",
+  "testDataSet": "./Tests/snli_test.json"
 }

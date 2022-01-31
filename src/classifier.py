@@ -13,7 +13,7 @@ from .dataSetUtils import getDevice, buildModel, tokenizeDataframe, loadDataSet,
 
 class Classifier():
     
-    def __init__(self, trainDataSet, testDataSet, outputFile, modelName = 'jplu/tf-xlm-roberta-large', maxLength = 120):
+    def __init__(self, trainDataSet, testDataSet, outputFile, modelName = 'roberta-large-mnli', maxLength = 120):
         self.maxLength = maxLength
         self.modelName = modelName
         self.device = getDevice()
@@ -90,9 +90,9 @@ class Classifier():
             Trainer(trainDataSet, testDataSet)
         
         # load data
-        train = pd.read_json(trainDataSet, lines=True)
-        test = pd.read_json(testDataSet, lines=True)
-        output = pd.read_json(outputFile, lines=True)
+        train = pd.read_json(trainDataSet)
+        test = pd.read_json(testDataSet)
+        output = pd.read_json(outputFile)
         
         # preprocess
         trainFeatures, trainLabels = self.__preprocess(train)

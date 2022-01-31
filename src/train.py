@@ -11,7 +11,7 @@ from .dataSetUtils import getDevice, buildModel, tokenizeDataframe, loadDataSet,
 
 class Trainer:
     
-    def __init__(self, trainDataSet, testDataSet, modelName = 'jplu/tf-xlm-roberta-large', epochs = 6, maxLength = 120, validation = "mnli+xnli"):
+    def __init__(self, trainDataSet, testDataSet, modelName = 'roberta-large-mnli', epochs = 6, maxLength = 120, validation = "dataset"):
 
         self.epochs = epochs
         self.device = getDevice()
@@ -20,14 +20,16 @@ class Trainer:
         self.auto = tf.data.experimental.AUTOTUNE  ##
         self.batchSize = 16 * self.device.num_replicas_in_sync
         self.tokenizer = AutoTokenizer.from_pretrained(modelName)
+        self.modelName = modelName
+
         
         self.run(trainDataSet, testDataSet)
 
     def __loadXnli(self):
         
         result = []
-        dataset = nlp.load_dataset(path = 'xnli')
-        
+       # dataset = nlp.load_dataset(path = 'xnli')
+        dataset = None
         for key in dataset.keys():
             for record in dataset[key]:
         
@@ -53,7 +55,7 @@ class Trainer:
         
         # fit parameters
         fit_params = dict(epochs = self.epochs, verbose = 2)
-        nli_dataset = buildDataset(mnliFeatures, np.concatenate([mnliLabels, xnliLabels]), "train", self.auto, self.batchSize)
+        #nli_dataset = buildDataset(mnliFeatures, np.concatenate([mnliLabels, xnliLabels]), "train", self.auto, self.batchSize)
         
         # create TPU context
         with self.device.scope():
@@ -95,11 +97,11 @@ class Trainer:
     def run(self, trainDataSet, testDataSet):
         
         # load data
-        train = pd.read_json(trainDataSet, lines=True) #TODO
-        test = pd.read_json(testDataSet, lines=True) #TODO
+        train = pd.read_json(trainDataSet) #TODO
+        test = pd.read_json(testDataSet) #TODO
         
-        mnli = loadDataSet('glue', 'mnli')
-        xnli = self.__loadXnli()  ##
+        #mnli = loadDataSet('glue', 'mnli')
+        #xnli = self.__loadXnli()  ##
         
         # tokenize 
         trainFeatures, trainLabels = self.__preprocess(train)
@@ -109,16 +111,16 @@ class Trainer:
         x_train, x_valid, y_train, y_valid = train_test_split(trainFeatures, trainLabels, test_size = 0.2, random_state = 2020)
         
         # nli datasets
-        mnliFeatures, mnliLabels = self.__preprocess(mnli)
-        xnliFeatures, xnliLabels = self.__preprocess(xnli)
+        #mnliFeatures, mnliLabels = self.__preprocess(mnli)
+        #xnliFeatures, xnliLabels = self.__preprocess(xnli)
         
         dataset = buildDataset(trainFeatures, trainLabels, "train", self.auto, self.batchSize)
         trainDataset = buildDataset(x_train, y_train, "train", self.auto, self.batchSize)
         validDataset = buildDataset(x_valid, y_valid, "valid", self.auto, self.batchSize)
         testDataset = buildDataset(testFeatures, None, "test", self.auto, self.batchSize)
         
-        mnliFeatures += xnliFeatures
+        #mnliFeatures += xnliFeatures
         
-        model, history = self.fit(trainDataset, validDataset, mnliFeatures, mnliLabels, xnliLabels, x_train)
+        model, history = self.fit(trainDataset, validDataset, None, None, None, x_train)
         self.saveModel(model)
         self.plot(history, True)
